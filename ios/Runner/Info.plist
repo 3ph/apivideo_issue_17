@@ -4,6 +4,10 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Test app</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Test app</string>
 	<key>CFBundleDisplayName</key>
 	<string>Apivideo Issue 17</string>
 	<key>CFBundleExecutable</key>

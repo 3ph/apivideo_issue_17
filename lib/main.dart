@@ -32,6 +32,8 @@ class _StreamPreviewWidgetState extends State<StreamPreviewWidget> {
   bool _shouldLockPortrait = true;
   DeviceOrientation _deviceOrientation = DeviceOrientation.portraitUp;
   late LiveStreamController _controller;
+  String _orientationText = '';
+  bool _controllerInitialized = false;
 
   @override
   void initState() {
@@ -46,15 +48,22 @@ class _StreamPreviewWidgetState extends State<StreamPreviewWidget> {
         debugPrint('Server disconnect');
       },
     );
-    _controller.create(
+    _controller
+        .create(
       initialAudioConfig: AudioConfig(),
       initialVideoConfig: VideoConfig.withDefaultBitrate(),
-    );
+    )
+        .then((_) {
+      _controller.startPreview();
+
+      setState(() => _controllerInitialized = true);
+    });
 
     Future.delayed(Duration.zero, () {
       _forceOrientation(
           shouldLockPortrait:
               MediaQuery.of(context).orientation == Orientation.portrait);
+      setState(() => _orientationText = _getOrientationText());
     });
     _orientationSubscription = deviceOrientation$.listen((orientation) {
       _deviceOrientation = orientation.fixed;
@@ -73,14 +82,43 @@ class _StreamPreviewWidgetState extends State<StreamPreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
     return Scaffold(
-      appBar: AppBar(),
-      body: CameraPreview(controller: _controller),
-      floatingActionButton: IconButton(
-        icon: const Icon(Icons.crop_rotate),
-        onPressed: () {
-          _forceOrientation(shouldLockPortrait: !_shouldLockPortrait);
-        },
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(toolbarHeight: 0),
+      body: Stack(
+        children: [
+          if (_controllerInitialized) CameraPreview(controller: _controller),
+          Padding(
+            padding: const EdgeInsets.only(top: 32),
+            child: SizedBox(
+              width: double.infinity,
+              child: Text(
+                _orientationText,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                    ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: Container(
+        height: 40,
+        width: 40,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+        ),
+        child: IconButton(
+          icon: const Icon(Icons.crop_rotate),
+          onPressed: () {
+            _forceOrientation(shouldLockPortrait: !_shouldLockPortrait);
+            setState(() => _orientationText = _getOrientationText());
+          },
+        ),
       ),
     );
   }
@@ -127,6 +165,9 @@ class _StreamPreviewWidgetState extends State<StreamPreviewWidget> {
       DeviceOrientation.landscapeRight,
     ]);
   }
+
+  String _getOrientationText() =>
+      _shouldLockPortrait ? 'Portrait' : 'Landscape';
 }
 
 extension OrientationExtensions on DeviceOrientation {
